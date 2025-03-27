@@ -21,6 +21,7 @@ import MatchesPage from './pages/MatchesPage';
 import LiveMatchPage from './pages/LiveMatchPage';
 import CourtsPage from './pages/CourtsPage';
 import SettingsPage from './pages/SettingsPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Auth Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -131,8 +132,8 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              {/* Fallback for unknown routes */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* 404 Not Found route */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </AnnouncementProvider>
         </TournamentProvider>
