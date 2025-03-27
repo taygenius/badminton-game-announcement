@@ -1,273 +1,257 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { usePlayers } from '../hooks/usePlayers';
 
 const PlayersPage = () => {
-  const [players, setPlayers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { players, fetchPlayers, deletePlayer, isLoading, error } = usePlayers();
+  const [filteredPlayers, setFilteredPlayers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCountry, setFilterCountry] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'ascending' });
-  const [countries, setCountries] = useState([]);
+  const [filter, setFilter] = useState('all'); // all, male, female
+  const [sortBy, setSortBy] = useState('name'); // name, country, skill
+  const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [playerToDelete, setPlayerToDelete] = useState(null);
 
+  // Fetch players on mount
   useEffect(() => {
-    const loadPlayers = async () => {
-      setIsLoading(true);
+    fetchPlayers();
+  }, [fetchPlayers]);
+
+  // Apply filters and sorting
+  useEffect(() => {
+    if (players.length === 0) {
+      setFilteredPlayers([]);
+      return;
+    }
+
+    let result = [...players];
+
+    // Apply search term filter
+    if (searchTerm) {
+      result = result.filter(player => 
+        player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        player.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (player.email && player.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Apply gender filter
+    if (filter !== 'all') {
+      result = result.filter(player => 
+        player.gender.toLowerCase() === filter.toLowerCase()
+      );
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let valueA = a[sortBy] ? a[sortBy].toLowerCase() : '';
+      let valueB = b[sortBy] ? b[sortBy].toLowerCase() : '';
       
-      try {
-        // In a real app, this would be an API call
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Mock player data
-        const mockPlayers = [
-          { id: '1', name: 'John Smith', age: 28, gender: 'Male', country: 'UK', ranking: 12, matchesPlayed: 45, matchesWon: 32, winRate: 71.1 },
-          { id: '2', name: 'Sarah Johnson', age: 25, gender: 'Female', country: 'USA', ranking: 8, matchesPlayed: 38, matchesWon: 29, winRate: 76.3 },
-          { id: '3', name: 'David Lee', age: 30, gender: 'Male', country: 'Canada', ranking: 15, matchesPlayed: 42, matchesWon: 28, winRate: 66.7 },
-          { id: '4', name: 'Emma Wilson', age: 22, gender: 'Female', country: 'Australia', ranking: 20, matchesPlayed: 30, matchesWon: 18, winRate: 60.0 },
-          { id: '5', name: 'Michael Brown', age: 27, gender: 'Male', country: 'UK', ranking: 18, matchesPlayed: 40, matchesWon: 24, winRate: 60.0 },
-          { id: '6', name: 'Olivia Martin', age: 24, gender: 'Female', country: 'France', ranking: 10, matchesPlayed: 36, matchesWon: 26, winRate: 72.2 },
-          { id: '7', name: 'James Wilson', age: 29, gender: 'Male', country: 'USA', ranking: 25, matchesPlayed: 38, matchesWon: 20, winRate: 52.6 },
-          { id: '8', name: 'Sophia Chen', age: 26, gender: 'Female', country: 'China', ranking: 5, matchesPlayed: 50, matchesWon: 42, winRate: 84.0 },
-          { id: '9', name: 'Daniel Park', age: 23, gender: 'Male', country: 'South Korea', ranking: 14, matchesPlayed: 35, matchesWon: 22, winRate: 62.9 },
-          { id: '10', name: 'Ava Wright', age: 21, gender: 'Female', country: 'Canada', ranking: 22, matchesPlayed: 28, matchesWon: 16, winRate: 57.1 }
-        ];
-        
-        setPlayers(mockPlayers);
-        
-        // Extract unique countries for filter dropdown
-        const uniqueCountries = [...new Set(mockPlayers.map(player => player.country))];
-        setCountries(uniqueCountries.sort());
-      } catch (error) {
-        console.error('Error loading players:', error);
-      } finally {
-        setIsLoading(false);
+      if (sortOrder === 'asc') {
+        return valueA.localeCompare(valueB);
+      } else {
+        return valueB.localeCompare(valueA);
       }
-    };
+    });
+
+    setFilteredPlayers(result);
+  }, [players, searchTerm, filter, sortBy, sortOrder]);
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleFilterChange = (e) => {
+    setFilter(e.target.value);
+  };
+
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+  };
+
+  const handleSortOrderToggle = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
+  const confirmDeletePlayer = (player) => {
+    setPlayerToDelete(player);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeletePlayer = async () => {
+    if (!playerToDelete) return;
     
-    loadPlayers();
-  }, []);
-
-  const handleSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedPlayers = () => {
-    const sortablePlayers = [...players];
-    
-    if (sortConfig.key) {
-      sortablePlayers.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    
-    return sortablePlayers;
-  };
-  
-  const getSortIndicator = (key) => {
-    if (sortConfig.key === key) {
-      return sortConfig.direction === 'ascending' ? ' ↑' : ' ↓';
-    }
-    return '';
-  };
-
-  const filteredPlayers = sortedPlayers().filter(player => {
-    const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry = filterCountry === '' || player.country === filterCountry;
-    return matchesSearch && matchesCountry;
-  });
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this player?')) {
-      // In a real app, this would be an API call
-      setPlayers(players.filter(player => player.id !== id));
+    try {
+      await deletePlayer(playerToDelete.id);
+      setShowDeleteModal(false);
+      setPlayerToDelete(null);
+    } catch (err) {
+      console.error('Error deleting player:', err);
     }
   };
-  
-  if (isLoading) {
-    return <div className="loading">Loading players...</div>;
-  }
 
   return (
     <div className="players-page">
       <div className="page-header">
         <h1>Players</h1>
-        <Link to="/players/create" className="btn btn-primary">
-          Add New Player
-        </Link>
+        <Link to="/players/create" className="btn btn-primary">Add Player</Link>
       </div>
       
-      <div className="filters-container">
-        <div className="filter-section">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Search players..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div className="country-filter">
-            <select
-              value={filterCountry}
-              onChange={(e) => setFilterCountry(e.target.value)}
+      {error && (
+        <div className="error-message" style={{ marginBottom: '1rem' }}>
+          {error}
+        </div>
+      )}
+      
+      <div className="filters-section">
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Search players..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+        </div>
+        
+        <div className="filter-controls">
+          <div className="filter-group">
+            <label htmlFor="gender-filter">Gender:</label>
+            <select 
+              id="gender-filter"
+              value={filter}
+              onChange={handleFilterChange}
+              className="filter-select"
             >
-              <option value="">All Countries</option>
-              {countries.map(country => (
-                <option key={country} value={country}>{country}</option>
-              ))}
+              <option value="all">All</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
             </select>
           </div>
-        </div>
-        
-        <div className="results-info">
-          Showing {filteredPlayers.length} of {players.length} players
+          
+          <div className="filter-group">
+            <label htmlFor="sort-by">Sort by:</label>
+            <select 
+              id="sort-by"
+              value={sortBy}
+              onChange={handleSortChange}
+              className="filter-select"
+            >
+              <option value="name">Name</option>
+              <option value="country">Country</option>
+              <option value="skill">Skill Level</option>
+            </select>
+            
+            <button 
+              className="sort-order-btn"
+              onClick={handleSortOrderToggle}
+              aria-label={sortOrder === 'asc' ? 'Sort ascending' : 'Sort descending'}
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'}
+            </button>
+          </div>
         </div>
       </div>
       
-      <div className="players-table-container">
-        {filteredPlayers.length === 0 ? (
-          <div className="empty-state">
-            <p>No players match your search criteria.</p>
-          </div>
-        ) : (
-          <table className="players-table">
-            <thead>
-              <tr>
-                <th onClick={() => handleSort('name')}>
-                  Name{getSortIndicator('name')}
-                </th>
-                <th onClick={() => handleSort('age')}>
-                  Age{getSortIndicator('age')}
-                </th>
-                <th onClick={() => handleSort('gender')}>
-                  Gender{getSortIndicator('gender')}
-                </th>
-                <th onClick={() => handleSort('country')}>
-                  Country{getSortIndicator('country')}
-                </th>
-                <th onClick={() => handleSort('ranking')}>
-                  Ranking{getSortIndicator('ranking')}
-                </th>
-                <th onClick={() => handleSort('matchesPlayed')}>
-                  Matches{getSortIndicator('matchesPlayed')}
-                </th>
-                <th onClick={() => handleSort('winRate')}>
-                  Win Rate{getSortIndicator('winRate')}
-                </th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlayers.map(player => (
-                <tr key={player.id}>
-                  <td>
-                    <Link to={`/players/${player.id}`} className="player-name">
-                      {player.name}
-                    </Link>
-                  </td>
-                  <td>{player.age}</td>
-                  <td>{player.gender}</td>
-                  <td>{player.country}</td>
-                  <td>
-                    <span className="ranking">{player.ranking}</span>
-                  </td>
-                  <td>
-                    {player.matchesWon} / {player.matchesPlayed}
-                  </td>
-                  <td>
-                    <div className="win-rate">
-                      <div 
-                        className="progress-bar" 
-                        style={{ 
-                          width: `${player.winRate}%`,
-                          backgroundColor: player.winRate > 70 ? 'var(--success)' : 
-                                         player.winRate > 50 ? 'var(--warning)' : 
-                                         'var(--error)'
-                        }}
-                      ></div>
-                      <span className="win-rate-text">{player.winRate}%</span>
+      {isLoading ? (
+        <div className="loading">Loading players...</div>
+      ) : filteredPlayers.length === 0 ? (
+        <div className="empty-state">
+          <p>No players found. Add a player or adjust your filters.</p>
+        </div>
+      ) : (
+        <div className="players-grid">
+          {filteredPlayers.map(player => (
+            <div key={player.id} className="player-card">
+              <div className="player-avatar">
+                {player.name.charAt(0).toUpperCase()}
+              </div>
+              
+              <div className="player-details">
+                <h3 className="player-name">{player.name}</h3>
+                
+                <div className="player-info">
+                  <div className="info-row">
+                    <span className="info-label">Country:</span>
+                    <span className="info-value">{player.country || 'Not specified'}</span>
+                  </div>
+                  
+                  <div className="info-row">
+                    <span className="info-label">Gender:</span>
+                    <span className="info-value">{player.gender || 'Not specified'}</span>
+                  </div>
+                  
+                  {player.skill && (
+                    <div className="info-row">
+                      <span className="info-label">Skill:</span>
+                      <span className="info-value">{player.skill}</span>
                     </div>
-                  </td>
-                  <td>
-                    <div className="table-actions">
-                      <Link to={`/players/${player.id}`} className="btn btn-small btn-outline">
-                        View
-                      </Link>
-                      <Link to={`/players/${player.id}/edit`} className="btn btn-small btn-outline">
-                        Edit
-                      </Link>
-                      <button 
-                        className="btn btn-small btn-danger"
-                        onClick={() => handleDelete(player.id)}
-                      >
-                        Delete
-                      </button>
+                  )}
+                  
+                  {player.tournamentIds && (
+                    <div className="info-row">
+                      <span className="info-label">Tournaments:</span>
+                      <span className="info-value">{player.tournamentIds.length}</span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="player-actions">
+                <Link to={`/players/${player.id}`} className="btn btn-small btn-secondary">
+                  View
+                </Link>
+                <Link to={`/players/${player.id}/edit`} className="btn btn-small btn-outline">
+                  Edit
+                </Link>
+                <button 
+                  className="btn btn-small btn-danger"
+                  onClick={() => confirmDeletePlayer(player)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       
-      <div className="player-stats">
-        <h2>Player Statistics</h2>
-        
-        <div className="stats-cards">
-          <div className="stat-card">
-            <div className="stat-value">{players.length}</div>
-            <div className="stat-label">Total Players</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-value">
-              {players.filter(p => p.gender === 'Male').length}
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && playerToDelete && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>Confirm Deletion</h2>
+              <button 
+                className="close-button"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                ×
+              </button>
             </div>
-            <div className="stat-label">Male Players</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-value">
-              {players.filter(p => p.gender === 'Female').length}
+            
+            <div className="modal-body">
+              <p>Are you sure you want to delete the player <strong>{playerToDelete.name}</strong>?</p>
+              <p>This action cannot be undone.</p>
             </div>
-            <div className="stat-label">Female Players</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-value">
-              {countries.length}
+            
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-danger"
+                onClick={handleDeletePlayer}
+              >
+                Delete Player
+              </button>
             </div>
-            <div className="stat-label">Countries</div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-value">
-              {Math.round(players.reduce((acc, p) => acc + p.age, 0) / players.length)}
-            </div>
-            <div className="stat-label">Average Age</div>
           </div>
         </div>
-        
-        <div className="import-export">
-          <button className="btn btn-secondary">
-            Import Players from CSV
-          </button>
-          <button className="btn btn-secondary">
-            Export Players to CSV
-          </button>
-        </div>
-      </div>
+      )}
       
       <style jsx>{`
         .players-page {
@@ -281,186 +265,145 @@ const PlayersPage = () => {
           margin-bottom: var(--spacing-lg);
         }
         
-        .filters-container {
-          background-color: var(--surface);
-          border-radius: var(--radius-md);
-          padding: var(--spacing-md);
+        .filters-section {
           margin-bottom: var(--spacing-lg);
-          box-shadow: var(--shadow-sm);
-        }
-        
-        .filter-section {
           display: flex;
+          flex-wrap: wrap;
           gap: var(--spacing-md);
-          margin-bottom: var(--spacing-md);
+          align-items: center;
         }
         
         .search-box {
           flex: 1;
+          min-width: 250px;
         }
         
-        .search-box input,
-        .country-filter select {
+        .search-input {
           width: 100%;
           padding: var(--spacing-sm) var(--spacing-md);
           border: 1px solid var(--border);
           border-radius: var(--radius-sm);
-          font-size: var(--font-md);
         }
         
-        .country-filter {
-          min-width: 200px;
+        .filter-controls {
+          display: flex;
+          gap: var(--spacing-md);
+          flex-wrap: wrap;
         }
         
-        .results-info {
-          color: var(--text-secondary);
-          font-size: var(--font-sm);
-        }
-        
-        .players-table-container {
-          background-color: var(--surface);
-          border-radius: var(--radius-md);
-          padding: var(--spacing-md);
-          margin-bottom: var(--spacing-lg);
-          box-shadow: var(--shadow-sm);
-          overflow-x: auto;
-        }
-        
-        .players-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        
-        .players-table th,
-        .players-table td {
-          padding: var(--spacing-sm) var(--spacing-md);
-          text-align: left;
-          border-bottom: 1px solid var(--border);
-        }
-        
-        .players-table th {
-          font-weight: 500;
-          cursor: pointer;
-          user-select: none;
-        }
-        
-        .players-table th:hover {
-          background-color: var(--background);
-        }
-        
-        .player-name {
-          font-weight: 500;
-          color: var(--primary);
-        }
-        
-        .ranking {
-          display: inline-block;
-          width: 2.5rem;
-          height: 2.5rem;
-          line-height: 2.5rem;
-          text-align: center;
-          border-radius: 50%;
-          background-color: var(--primary);
-          color: white;
-          font-weight: bold;
-        }
-        
-        .win-rate {
-          position: relative;
-          height: 1.5rem;
-          background-color: var(--border);
-          border-radius: var(--radius-sm);
-          overflow: hidden;
-          width: 100px;
-        }
-        
-        .progress-bar {
-          height: 100%;
-          border-radius: var(--radius-sm);
-        }
-        
-        .win-rate-text {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+        .filter-group {
           display: flex;
           align-items: center;
-          justify-content: center;
-          font-size: var(--font-sm);
-          font-weight: 500;
-        }
-        
-        .table-actions {
-          display: flex;
           gap: var(--spacing-xs);
         }
         
-        .player-stats {
+        .filter-select {
+          padding: var(--spacing-xs) var(--spacing-sm);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        
+        .sort-order-btn {
+          background: none;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background-color var(--transition-fast);
+        }
+        
+        .sort-order-btn:hover {
+          background-color: var(--background);
+        }
+        
+        .players-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: var(--spacing-md);
+        }
+        
+        .player-card {
           background-color: var(--surface);
           border-radius: var(--radius-md);
-          padding: var(--spacing-lg);
           box-shadow: var(--shadow-sm);
-        }
-        
-        .player-stats h2 {
-          margin-bottom: var(--spacing-lg);
-        }
-        
-        .stats-cards {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: var(--spacing-md);
-          margin-bottom: var(--spacing-lg);
-        }
-        
-        .stat-card {
-          background-color: var(--background);
-          border-radius: var(--radius-md);
           padding: var(--spacing-md);
-          text-align: center;
-        }
-        
-        .stat-value {
-          font-size: var(--font-xl);
-          font-weight: bold;
-          color: var(--primary);
-          margin-bottom: var(--spacing-xs);
-        }
-        
-        .stat-label {
-          color: var(--text-secondary);
-        }
-        
-        .import-export {
           display: flex;
-          justify-content: flex-end;
-          gap: var(--spacing-md);
-          border-top: 1px solid var(--border);
-          padding-top: var(--spacing-md);
+          flex-direction: column;
+          transition: transform var(--transition-normal), box-shadow var(--transition-normal);
         }
         
-        .empty-state {
-          padding: var(--spacing-xl);
+        .player-card:hover {
+          transform: translateY(-3px);
+          box-shadow: var(--shadow-md);
+        }
+        
+        .player-avatar {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background-color: var(--primary);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+          font-weight: bold;
+          margin-bottom: var(--spacing-sm);
+          align-self: center;
+        }
+        
+        .player-details {
+          flex: 1;
+          margin-bottom: var(--spacing-md);
+        }
+        
+        .player-name {
+          margin-bottom: var(--spacing-sm);
           text-align: center;
+        }
+        
+        .player-info {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-xs);
+        }
+        
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: var(--spacing-xs) 0;
+          border-bottom: 1px solid var(--border);
+        }
+        
+        .info-label {
+          font-weight: 600;
           color: var(--text-secondary);
+        }
+        
+        .player-actions {
+          display: flex;
+          justify-content: center;
+          gap: var(--spacing-sm);
+          margin-top: var(--spacing-sm);
         }
         
         @media (max-width: 768px) {
-          .filter-section {
+          .page-header {
             flex-direction: column;
+            align-items: flex-start;
+            gap: var(--spacing-md);
           }
           
-          .stats-cards {
-            grid-template-columns: 1fr 1fr;
-          }
-          
-          .import-export {
+          .filters-section {
             flex-direction: column;
+            align-items: stretch;
           }
           
-          .table-actions {
+          .filter-controls {
             flex-direction: column;
           }
         }
