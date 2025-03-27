@@ -2,24 +2,41 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
+// Helper functions for localStorage
+const saveUser = (user) => {
+  localStorage.setItem('badminton_user', JSON.stringify(user));
+};
+
+const getUser = () => {
+  const userString = localStorage.getItem('badminton_user');
+  if (userString) {
+    try {
+      return JSON.parse(userString);
+    } catch (e) {
+      console.error('Error parsing user data from localStorage:', e);
+      return null;
+    }
+  }
+  return null;
+};
+
+const clearUser = () => {
+  localStorage.removeItem('badminton_user');
+  localStorage.removeItem('badminton_auth_token');
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if there's a stored auth token
+    // Check if there's a stored user and auth token
+    const storedUser = getUser();
     const token = localStorage.getItem('badminton_auth_token');
     
-    if (token) {
-      // For demo purposes, we're setting a mock user
-      // In a real app, you would validate the token with your backend
-      setUser({
-        id: '1',
-        name: 'Demo User',
-        email: 'demo@example.com',
-        role: 'admin'
-      });
+    if (storedUser && token) {
+      setUser(storedUser);
       setIsAuthenticated(true);
     }
     
@@ -37,21 +54,26 @@ export const AuthProvider = ({ children }) => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // For demo, we'll create a mock user based on the email
       const mockUser = {
         id: '1',
-        name: 'Demo User',
+        name: email.split('@')[0].split('.').map(name => 
+          name.charAt(0).toUpperCase() + name.slice(1)
+        ).join(' '),
         email: email,
         role: 'admin'
       };
       
-      // Store the token
+      // Store the user and token
       localStorage.setItem('badminton_auth_token', 'mock_token_for_demo');
+      saveUser(mockUser);
       
       setUser(mockUser);
       setIsAuthenticated(true);
       
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
         error: 'Invalid credentials. Please try again.'
@@ -79,14 +101,16 @@ export const AuthProvider = ({ children }) => {
         role: 'admin'
       };
       
-      // Store the token
+      // Store the user and token
       localStorage.setItem('badminton_auth_token', 'mock_token_for_demo');
+      saveUser(mockUser);
       
       setUser(mockUser);
       setIsAuthenticated(true);
       
       return { success: true };
     } catch (error) {
+      console.error('Registration error:', error);
       return {
         success: false,
         error: 'Registration failed. Please try again.'
@@ -98,7 +122,7 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = () => {
-    localStorage.removeItem('badminton_auth_token');
+    clearUser();
     setUser(null);
     setIsAuthenticated(false);
   };
