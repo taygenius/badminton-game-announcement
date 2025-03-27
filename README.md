@@ -16,6 +16,15 @@ A comprehensive web application for managing badminton tournaments, matches, pla
 
 The application is deployed and available at: [https://taygenius.github.io/badminton-game-announcement](https://taygenius.github.io/badminton-game-announcement)
 
+### Demo Login Credentials
+
+For demonstration purposes, you can use any of the following credentials:
+
+- **Email**: any email address (e.g., demo@example.com)
+- **Password**: any password (e.g., password123)
+
+The application uses localStorage for data persistence, so your data will be saved in your browser session.
+
 ## Getting Started
 
 ### Prerequisites
@@ -59,16 +68,17 @@ yarn build
 
 The build files will be created in the `build` directory.
 
-## Demo Credentials
+## Data Storage
 
-For demonstration purposes, you can log in with any email and password. The application is currently using mock data and does not connect to a real backend API.
+This application uses localStorage for data persistence. All data is stored locally in your browser, including:
 
-## Technologies Used
+- User authentication information
+- Tournament data
+- Player information
+- Match schedules and scores
+- Court configurations
 
-- React.js
-- React Router
-- CSS
-- GitHub Pages (for deployment)
+There is no backend server, so data will not persist across different browsers or devices.
 
 ## Project Structure
 
@@ -94,7 +104,7 @@ The application is automatically deployed to GitHub Pages when changes are pushe
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## Acknowledgements
 
