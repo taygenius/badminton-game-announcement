@@ -1,189 +1,148 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 
-// Helper function to save matches to localStorage
-const saveMatches = (matches) => {
+// Helper functions for localStorage
+const saveMatchesToStorage = (matches) => {
   localStorage.setItem('badminton_matches', JSON.stringify(matches));
 };
 
-// Helper function to get matches from localStorage
-const getStoredMatches = () => {
-  const matchesString = localStorage.getItem('badminton_matches');
-  if (matchesString) {
-    try {
-      return JSON.parse(matchesString);
-    } catch (e) {
-      console.error('Error parsing matches data from localStorage:', e);
-      return null;
-    }
+const getMatchesFromStorage = () => {
+  const storedMatches = localStorage.getItem('badminton_matches');
+  return storedMatches ? JSON.parse(storedMatches) : [];
+};
+
+// Mock initial data
+const initialMatches = [
+  {
+    id: '1',
+    tournamentId: '1',
+    player1: { id: '1', name: 'John Smith' },
+    player2: { id: '3', name: 'David Lee' },
+    scheduledTime: '2025-03-27T14:00:00Z',
+    court: '3',
+    category: 'Men\'s Singles',
+    round: 'Quarter-final',
+    status: 'completed',
+    winner: 'player1',
+    games: [
+      { player1Score: 21, player2Score: 19, completed: true, winner: 'player1' },
+      { player1Score: 19, player2Score: 21, completed: true, winner: 'player2' },
+      { player1Score: 21, player2Score: 18, completed: true, winner: 'player1' }
+    ],
+    completedAt: '2025-03-27T15:30:00Z',
+    duration: 5400 // 1.5 hours in seconds
+  },
+  {
+    id: '2',
+    tournamentId: '1',
+    player1: { id: '2', name: 'Sarah Johnson' },
+    player2: { id: '4', name: 'Emily Wilson' },
+    scheduledTime: '2025-03-27T14:30:00Z',
+    court: '2',
+    category: 'Women\'s Singles',
+    round: 'Quarter-final',
+    status: 'completed',
+    winner: 'player1',
+    games: [
+      { player1Score: 21, player2Score: 15, completed: true, winner: 'player1' },
+      { player1Score: 21, player2Score: 17, completed: true, winner: 'player1' }
+    ],
+    completedAt: '2025-03-27T15:45:00Z',
+    duration: 4500 // 1.25 hours in seconds
+  },
+  {
+    id: '3',
+    tournamentId: '1',
+    player1: { id: '3', name: 'Robert Chen' },
+    player2: { id: '5', name: 'Alex Rodriguez' },
+    scheduledTime: '2025-03-27T15:00:00Z',
+    court: '1',
+    category: 'Men\'s Singles',
+    round: 'Quarter-final',
+    status: 'completed',
+    winner: 'player2',
+    games: [
+      { player1Score: 18, player2Score: 21, completed: true, winner: 'player2' },
+      { player1Score: 21, player2Score: 16, completed: true, winner: 'player1' },
+      { player1Score: 19, player2Score: 21, completed: true, winner: 'player2' }
+    ],
+    completedAt: '2025-03-27T16:30:00Z',
+    duration: 5400 // 1.5 hours in seconds
+  },
+  {
+    id: '4',
+    tournamentId: '1',
+    player1: { id: '1', name: 'Michael Brown' },
+    player2: { id: '2', name: 'James Williams' },
+    scheduledTime: '2025-03-27T17:00:00Z',
+    court: '1',
+    category: 'Men\'s Singles',
+    round: 'Semi-final',
+    status: 'called',
+    games: [
+      { player1Score: 0, player2Score: 0, completed: false }
+    ],
+    currentGame: 0
+  },
+  {
+    id: '5',
+    tournamentId: '1',
+    player1: { id: '3', name: 'Emma Taylor' },
+    player2: { id: '4', name: 'Olivia Martin' },
+    scheduledTime: '2025-03-27T17:30:00Z',
+    court: '2',
+    category: 'Women\'s Singles',
+    round: 'Semi-final',
+    status: 'scheduled',
+    games: [
+      { player1Score: 0, player2Score: 0, completed: false }
+    ],
+    currentGame: 0
+  },
+  {
+    id: '6',
+    tournamentId: '1',
+    player1: { id: '5', name: 'Daniel White' },
+    player2: { id: '6', name: 'Kevin Thomas' },
+    scheduledTime: '2025-03-27T18:00:00Z',
+    court: '3',
+    category: 'Men\'s Singles',
+    round: 'Semi-final',
+    status: 'scheduled',
+    games: [
+      { player1Score: 0, player2Score: 0, completed: false }
+    ],
+    currentGame: 0
   }
-  return null;
-};
+];
 
-// Mock data for matches
-const generateMockMatches = () => {
-  return [
-    {
-      id: '1',
-      tournamentId: '1',
-      player1: { id: '1', name: 'John Smith' },
-      player2: { id: '2', name: 'David Lee' },
-      court: '1',
-      round: 'Quarter-final',
-      category: 'Men\'s Singles',
-      status: 'completed',
-      scheduledTime: '2025-03-27T09:00:00Z',
-      startTime: '2025-03-27T09:05:00Z',
-      endTime: '2025-03-27T09:45:00Z',
-      winner: 'player1',
-      games: [
-        { player1Score: 21, player2Score: 19, completed: true, winner: 'player1' },
-        { player1Score: 19, player2Score: 21, completed: true, winner: 'player2' },
-        { player1Score: 21, player2Score: 18, completed: true, winner: 'player1' }
-      ]
-    },
-    {
-      id: '2',
-      tournamentId: '1',
-      player1: { id: '3', name: 'Sarah Johnson' },
-      player2: { id: '4', name: 'Emily Wilson' },
-      court: '2',
-      round: 'Quarter-final',
-      category: 'Women\'s Singles',
-      status: 'completed',
-      scheduledTime: '2025-03-27T09:00:00Z',
-      startTime: '2025-03-27T09:05:00Z',
-      endTime: '2025-03-27T09:35:00Z',
-      winner: 'player1',
-      games: [
-        { player1Score: 21, player2Score: 15, completed: true, winner: 'player1' },
-        { player1Score: 21, player2Score: 17, completed: true, winner: 'player1' }
-      ]
-    },
-    {
-      id: '3',
-      tournamentId: '1',
-      player1: { id: '5', name: 'Robert Chen' },
-      player2: { id: '6', name: 'Alex Rodriguez' },
-      court: '3',
-      round: 'Quarter-final',
-      category: 'Men\'s Singles',
-      status: 'completed',
-      scheduledTime: '2025-03-27T09:30:00Z',
-      startTime: '2025-03-27T09:35:00Z',
-      endTime: '2025-03-27T10:15:00Z',
-      winner: 'player2',
-      games: [
-        { player1Score: 18, player2Score: 21, completed: true, winner: 'player2' },
-        { player1Score: 21, player2Score: 16, completed: true, winner: 'player1' },
-        { player1Score: 19, player2Score: 21, completed: true, winner: 'player2' }
-      ]
-    },
-    {
-      id: '4',
-      tournamentId: '1',
-      player1: { id: '7', name: 'Michael Brown' },
-      player2: { id: '8', name: 'James Williams' },
-      court: '1',
-      round: 'Semi-final',
-      category: 'Men\'s Singles',
-      status: 'inProgress',
-      scheduledTime: '2025-03-27T10:30:00Z',
-      startTime: '2025-03-27T10:35:00Z',
-      endTime: null,
-      winner: null,
-      currentGame: 0,
-      games: [
-        { player1Score: 11, player2Score: 9, completed: false, winner: null },
-        { player1Score: 0, player2Score: 0, completed: false, winner: null },
-        { player1Score: 0, player2Score: 0, completed: false, winner: null }
-      ]
-    },
-    {
-      id: '5',
-      tournamentId: '1',
-      player1: { id: '9', name: 'Emma Taylor' },
-      player2: { id: '10', name: 'Olivia Martin' },
-      court: null,
-      round: 'Semi-final',
-      category: 'Women\'s Singles',
-      status: 'scheduled',
-      scheduledTime: '2025-03-27T11:00:00Z',
-      startTime: null,
-      endTime: null,
-      winner: null,
-      games: []
-    },
-    {
-      id: '6',
-      tournamentId: '1',
-      player1: { id: '6', name: 'Alex Rodriguez' },
-      player2: { id: '11', name: 'Kevin Thomas' },
-      court: null,
-      round: 'Semi-final',
-      category: 'Men\'s Singles',
-      status: 'scheduled',
-      scheduledTime: '2025-03-27T11:30:00Z',
-      startTime: null,
-      endTime: null,
-      winner: null,
-      games: []
-    }
-  ];
-};
+// Check if we need to initialize localStorage
+if (getMatchesFromStorage().length === 0) {
+  saveMatchesToStorage(initialMatches);
+}
 
-/**
- * Custom hook for managing match data
- */
 export const useMatches = () => {
-  const [matches, setMatches] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [matches, setMatches] = useState(getMatchesFromStorage());
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Initialize matches from localStorage or mock data
-  useEffect(() => {
-    const initializeMatches = async () => {
-      setIsLoading(true);
-      try {
-        // Try to get matches from localStorage
-        const storedMatches = getStoredMatches();
-        
-        if (storedMatches) {
-          setMatches(storedMatches);
-        } else {
-          // If no stored matches, use mock data
-          const mockMatches = generateMockMatches();
-          setMatches(mockMatches);
-          saveMatches(mockMatches);
-        }
-        
-        setError(null);
-      } catch (err) {
-        console.error('Error initializing matches:', err);
-        setError('Failed to load matches data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    initializeMatches();
-  }, []);
 
   // Fetch all matches
   const fetchMatches = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
+      // For now, we'll just use localStorage
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Return stored matches
-      const storedMatches = getStoredMatches() || generateMockMatches();
       setMatches(storedMatches);
-      
       return storedMatches;
     } catch (err) {
       console.error('Error fetching matches:', err);
-      setError('Failed to fetch matches');
+      setError('Failed to fetch matches. Please try again.');
       return [];
     } finally {
       setIsLoading(false);
@@ -193,70 +152,95 @@ export const useMatches = () => {
   // Fetch matches by tournament ID
   const fetchMatchesByTournament = useCallback(async (tournamentId) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Get all matches and filter by tournament ID
-      const allMatches = getStoredMatches() || generateMockMatches();
-      const tournamentMatches = allMatches.filter(match => match.tournamentId === tournamentId);
+      const filteredMatches = storedMatches.filter(match => 
+        match.tournamentId === tournamentId
+      );
       
-      // Don't update all matches, just return the filtered ones
-      return tournamentMatches;
-    } catch (err) {
-      console.error(`Error fetching matches for tournament ${tournamentId}:`, err);
-      setError(`Failed to fetch matches for tournament ${tournamentId}`);
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Fetch matches by status
-  const fetchMatchesByStatus = useCallback(async (status) => {
-    setIsLoading(true);
-    try {
-      // In a real app, this would be an API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Get all matches and filter by status
-      const allMatches = getStoredMatches() || generateMockMatches();
-      const filteredMatches = allMatches.filter(match => match.status === status);
-      
-      // Don't update all matches, just return the filtered ones
+      setMatches(filteredMatches);
       return filteredMatches;
     } catch (err) {
-      console.error(`Error fetching matches with status ${status}:`, err);
-      setError(`Failed to fetch matches with status ${status}`);
+      console.error(`Error fetching matches for tournament ${tournamentId}:`, err);
+      setError('Failed to fetch tournament matches. Please try again.');
       return [];
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Fetch pending matches (scheduled but not started)
+  // Fetch pending matches (scheduled but not called)
   const fetchPendingMatches = useCallback(async () => {
-    return fetchMatchesByStatus('scheduled');
-  }, [fetchMatchesByStatus]);
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // In a real app, this would be an API call
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const pendingMatches = storedMatches.filter(match => 
+        match.status === 'scheduled'
+      );
+      
+      return pendingMatches;
+    } catch (err) {
+      console.error('Error fetching pending matches:', err);
+      setError('Failed to fetch pending matches. Please try again.');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  // Fetch active matches (in progress)
+  // Fetch active matches (in progress or called)
   const fetchActiveMatches = useCallback(async () => {
-    return fetchMatchesByStatus('inProgress');
-  }, [fetchMatchesByStatus]);
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // In a real app, this would be an API call
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const activeMatches = storedMatches.filter(match => 
+        match.status === 'inProgress' || match.status === 'called'
+      );
+      
+      return activeMatches;
+    } catch (err) {
+      console.error('Error fetching active matches:', err);
+      setError('Failed to fetch active matches. Please try again.');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Get a specific match by ID
   const getMatch = useCallback(async (id) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Get all matches and find by ID
-      const allMatches = getStoredMatches() || generateMockMatches();
-      const match = allMatches.find(m => m.id === id);
+      const match = storedMatches.find(m => m.id === id);
       
       if (!match) {
         throw new Error(`Match with ID ${id} not found`);
@@ -265,7 +249,7 @@ export const useMatches = () => {
       return match;
     } catch (err) {
       console.error(`Error fetching match with ID ${id}:`, err);
-      setError(`Failed to fetch match with ID ${id}`);
+      setError(`Failed to fetch match details. ${err.message}`);
       throw err;
     } finally {
       setIsLoading(false);
@@ -275,85 +259,70 @@ export const useMatches = () => {
   // Create a new match
   const createMatch = useCallback(async (matchData) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const storedMatches = getMatchesFromStorage();
       
-      // Get current matches
-      const currentMatches = getStoredMatches() || generateMockMatches();
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      // Create new match with ID and default values
       const newMatch = {
         id: Date.now().toString(),
-        status: 'scheduled',
-        scheduledTime: new Date().toISOString(),
-        startTime: null,
-        endTime: null,
-        winner: null,
-        games: [],
-        ...matchData
+        ...matchData,
+        status: matchData.status || 'scheduled',
+        games: matchData.games || [{ player1Score: 0, player2Score: 0, completed: false }],
+        currentGame: 0
       };
       
-      // Add to matches array
-      const updatedMatches = [...currentMatches, newMatch];
-      setMatches(updatedMatches);
-      saveMatches(updatedMatches);
+      const updatedMatches = [...storedMatches, newMatch];
+      saveMatchesToStorage(updatedMatches);
+      setMatches(prevMatches => [...prevMatches, newMatch]);
       
       return newMatch;
     } catch (err) {
       console.error('Error creating match:', err);
-      setError('Failed to create match');
+      setError('Failed to create match. Please try again.');
       throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Update match status
+  // Update match status (e.g., scheduled -> called -> inProgress -> completed)
   const updateMatchStatus = useCallback(async (id, statusData) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Get current matches
-      const currentMatches = getStoredMatches() || generateMockMatches();
-      
-      // Find match to update
-      const matchIndex = currentMatches.findIndex(m => m.id === id);
+      const matchIndex = storedMatches.findIndex(m => m.id === id);
       
       if (matchIndex === -1) {
         throw new Error(`Match with ID ${id} not found`);
       }
       
-      // Update match
       const updatedMatch = {
-        ...currentMatches[matchIndex],
+        ...storedMatches[matchIndex],
         ...statusData
       };
       
-      // If status is changing, update related fields
-      if (statusData.status) {
-        if (statusData.status === 'inProgress' && !updatedMatch.startTime) {
-          updatedMatch.startTime = new Date().toISOString();
-        } else if (statusData.status === 'completed' && !updatedMatch.endTime) {
-          updatedMatch.endTime = new Date().toISOString();
-        }
-      }
-      
-      // Update matches array
-      const updatedMatches = [...currentMatches];
+      const updatedMatches = [...storedMatches];
       updatedMatches[matchIndex] = updatedMatch;
       
+      saveMatchesToStorage(updatedMatches);
       setMatches(updatedMatches);
-      saveMatches(updatedMatches);
       
       return updatedMatch;
     } catch (err) {
       console.error(`Error updating match status for ID ${id}:`, err);
-      setError(`Failed to update match status for ID ${id}`);
+      setError(`Failed to update match status. ${err.message}`);
       throw err;
     } finally {
       setIsLoading(false);
@@ -361,83 +330,82 @@ export const useMatches = () => {
   }, []);
 
   // Update match score
-  const updateMatchScore = useCallback(async (id, scoreData) => {
+  const updateMatchScore = useCallback(async (id, scores) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Get current matches
-      const currentMatches = getStoredMatches() || generateMockMatches();
-      
-      // Find match to update
-      const matchIndex = currentMatches.findIndex(m => m.id === id);
+      const matchIndex = storedMatches.findIndex(m => m.id === id);
       
       if (matchIndex === -1) {
         throw new Error(`Match with ID ${id} not found`);
       }
       
-      // Update match
+      const match = storedMatches[matchIndex];
+      
       const updatedMatch = {
-        ...currentMatches[matchIndex],
-        games: scoreData
+        ...match,
+        games: scores,
+        status: match.status === 'scheduled' || match.status === 'called' ? 'inProgress' : match.status
       };
       
-      // Update matches array
-      const updatedMatches = [...currentMatches];
+      const updatedMatches = [...storedMatches];
       updatedMatches[matchIndex] = updatedMatch;
       
+      saveMatchesToStorage(updatedMatches);
       setMatches(updatedMatches);
-      saveMatches(updatedMatches);
       
       return updatedMatch;
     } catch (err) {
-      console.error(`Error updating match score for ID ${id}:`, err);
-      setError(`Failed to update match score for ID ${id}`);
+      console.error(`Error updating score for match ID ${id}:`, err);
+      setError(`Failed to update match score. ${err.message}`);
       throw err;
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Complete a match
+  // Complete a match (set winner, duration, etc.)
   const completeMatch = useCallback(async (id, resultData) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const storedMatches = getMatchesFromStorage();
       
-      // Get current matches
-      const currentMatches = getStoredMatches() || generateMockMatches();
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Find match to update
-      const matchIndex = currentMatches.findIndex(m => m.id === id);
+      const matchIndex = storedMatches.findIndex(m => m.id === id);
       
       if (matchIndex === -1) {
         throw new Error(`Match with ID ${id} not found`);
       }
       
-      // Update match
       const updatedMatch = {
-        ...currentMatches[matchIndex],
+        ...storedMatches[matchIndex],
+        ...resultData,
         status: 'completed',
-        endTime: new Date().toISOString(),
-        ...resultData
+        completedAt: new Date().toISOString()
       };
       
-      // Update matches array
-      const updatedMatches = [...currentMatches];
+      const updatedMatches = [...storedMatches];
       updatedMatches[matchIndex] = updatedMatch;
       
+      saveMatchesToStorage(updatedMatches);
       setMatches(updatedMatches);
-      saveMatches(updatedMatches);
       
       return updatedMatch;
     } catch (err) {
-      console.error(`Error completing match with ID ${id}:`, err);
-      setError(`Failed to complete match with ID ${id}`);
+      console.error(`Error completing match ID ${id}:`, err);
+      setError(`Failed to complete match. ${err.message}`);
       throw err;
     } finally {
       setIsLoading(false);
@@ -447,24 +415,28 @@ export const useMatches = () => {
   // Delete a match
   const deleteMatch = useCallback(async (id) => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       // In a real app, this would be an API call
-      // Simulate API delay
+      const storedMatches = getMatchesFromStorage();
+      
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Get current matches
-      const currentMatches = getStoredMatches() || generateMockMatches();
+      const updatedMatches = storedMatches.filter(m => m.id !== id);
       
-      // Filter out the match to delete
-      const updatedMatches = currentMatches.filter(match => match.id !== id);
+      if (updatedMatches.length === storedMatches.length) {
+        throw new Error(`Match with ID ${id} not found`);
+      }
       
+      saveMatchesToStorage(updatedMatches);
       setMatches(updatedMatches);
-      saveMatches(updatedMatches);
       
       return { success: true };
     } catch (err) {
-      console.error(`Error deleting match with ID ${id}:`, err);
-      setError(`Failed to delete match with ID ${id}`);
+      console.error(`Error deleting match ID ${id}:`, err);
+      setError(`Failed to delete match. ${err.message}`);
       throw err;
     } finally {
       setIsLoading(false);
@@ -477,7 +449,6 @@ export const useMatches = () => {
     error,
     fetchMatches,
     fetchMatchesByTournament,
-    fetchMatchesByStatus,
     fetchPendingMatches,
     fetchActiveMatches,
     getMatch,
