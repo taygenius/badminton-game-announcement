@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useTournaments } from '../hooks/useTournaments';
+// Removed unused import: import { useTournaments } from '../hooks/useTournaments';
 
 const DashboardPage = () => {
   const { user } = useAuth();
