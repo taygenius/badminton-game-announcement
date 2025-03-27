@@ -74,7 +74,7 @@ export const TournamentProvider = ({ children }) => {
     };
 
     loadTournaments();
-  }, []);
+  }, [activeTournament, mockTournaments]);
 
   // Fetch all tournaments
   const fetchTournaments = useCallback(async () => {
@@ -85,6 +85,7 @@ export const TournamentProvider = ({ children }) => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // In a real app, you would fetch from the API
+      setTournaments(mockTournaments);
       return mockTournaments;
     } catch (error) {
       console.error('Error fetching tournaments:', error);
@@ -92,7 +93,7 @@ export const TournamentProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [mockTournaments]);
 
   // Get a specific tournament by ID
   const getTournament = useCallback(async (id) => {
@@ -123,7 +124,7 @@ export const TournamentProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [tournaments]);
+  }, [tournaments, mockTournaments]);
 
   // Create a new tournament
   const createTournament = useCallback(async (tournamentData) => {
