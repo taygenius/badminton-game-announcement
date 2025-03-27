@@ -12,11 +12,7 @@ A comprehensive web application for managing badminton tournaments, matches, pla
 - **Announcements**: Automated voice announcements for match calls, score updates, and results
 - **Display Integration**: Connect to external displays for audience viewing
 
-## Demo
-
-The application is deployed and available at: [https://taygenius.github.io/badminton-game-announcement](https://taygenius.github.io/badminton-game-announcement)
-
-### Demo Login Credentials
+## Demo Login Credentials
 
 For demonstration purposes, you can use any of the following credentials:
 
@@ -80,6 +76,19 @@ This application uses localStorage for data persistence. All data is stored loca
 
 There is no backend server, so data will not persist across different browsers or devices.
 
+## Deployment
+
+### Manual Deployment to GitHub Pages
+
+The application includes a GitHub Actions workflow file for deployment to GitHub Pages, but it's configured to run only when manually triggered. To deploy:
+
+1. Go to the GitHub repository
+2. Navigate to the "Actions" tab
+3. Select the "Deploy to GitHub Pages" workflow
+4. Click "Run workflow" and select the branch you want to deploy
+
+This approach allows you to control when the application is deployed rather than having automatic deployment on every push.
+
 ## Project Structure
 
 ```
@@ -97,10 +106,6 @@ badminton-app/
 │   └── index.js          # Application entry point
 └── package.json          # Project dependencies and scripts
 ```
-
-## Deployment
-
-The application is automatically deployed to GitHub Pages when changes are pushed to the main branch. The deployment workflow is defined in `.github/workflows/deploy-pages.yml`.
 
 ## License
 
