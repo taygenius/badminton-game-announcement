@@ -1,9 +1,9 @@
 name: Deploy to GitHub Pages
 
+# This workflow is now set to manual trigger only
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  # Removed the automatic push trigger
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
 
 permissions:
   contents: write
